@@ -16,9 +16,110 @@ Auth0 uses a public face endpoint for resetting the password.  This endpoint tak
 
 ### Response:
 200 - successful password reset  
-400 - failed password reset
+400 - failed due to password policy defined on the connection
+403 - failed due to CSRF token being invalid
+500 - failed password reset due to endpoint contract (required fields, etc)
 
-This API is not an JSON/RESTful endpoint.  As such you cannot expect to use the body for anything meaningful.  This endpoint will return HTML used by Auth0ConfirmPassword to display the result.  Instead you should look at the error codes to determin success or error and rely on javascript validation for better UX.  I would recommend treating any non-200 status code the same (as an error).  If you JavaScript validation is cirumvented you can still have server side validation, but it won't give you meaningful errors.  You should instead treat this as a generic error.
+
+400 - PasswordStrengthError
+
+```json
+{
+  "name": "PasswordStrengthError",
+  "message": "Password is too weak",
+  "code": "invalid_password",
+  "description": {
+    "rules": [{
+      "message": "At least %d characters in length",
+      "format": [10],
+      "code": "lengthAtLeast",
+      "verified": true
+    }, {
+      "message": "Contain at least %d of the following %d types of characters:",
+      "code": "containsAtLeast",
+      "format": [3, 4],
+      "items": [{
+        "message": "lower case letters (a-z)",
+        "code": "lowerCase",
+        "verified": true
+      }, {
+        "message": "upper case letters (A-Z)",
+        "code": "upperCase",
+        "verified": false
+      }, {
+        "message": "numbers (i.e. 0-9)",
+        "code": "numbers",
+        "verified": false
+      }, {
+        "message": "special characters (e.g. !@#$%^&*)",
+        "code": "specialCharacters",
+        "verified": true
+      }],
+      "verified": false
+    }, {
+      "message": "No more than %d identical characters in a row (e.g., \"%s\" not allowed)",
+      "code": "identicalChars",
+      "format": [2, "aaa"],
+      "verified": true
+    }],
+    "verified": false
+  },
+  "policy": "* At least 10 characters in length\n* Contain at least 3 of the following 4 types of characters:\n * lower case letters (a-z)\n * upper case letters (A-Z)\n * numbers (i.e. 0-9)\n * special characters (e.g. !@#$%^&*)\n* No more than 2 identical characters in a row (e.g., \"aaa\" not allowed)",
+  "statusCode": 400
+}
+```
+
+400 - PasswordHistoryError
+
+```json
+{
+  "name": "PasswordHistoryError",
+  "message": "Password has previously been used",
+  "code": "invalid_password",
+  "description": "You may not reuse any of the last 5 passwords. This password was used a minute ago.",
+  "statusCode": 400
+}
+```
+
+400 - PasswordDictError
+
+```json
+{
+  "name": "PasswordDictionaryError",
+  "message": "Password is too common",
+  "code": "invalid_password",
+  "description": "Password is not allowed, it might be too common.",
+  "statusCode": 400
+}
+```
+
+400 - PasswordNoUserInfoError
+
+```json
+{
+  "name": "PasswordNoUserInfoError",
+  "message": "Password contains user information",
+  "code": "invalid_password",
+  "description": "Password is based on user information",
+  "statusCode": 400
+}
+```
+
+403 - CSRF Invalid Token Error
+
+```json
+{
+  "name": "CsrfInvalidTokenError",
+  "message": "Invalid CSRF token",
+  "code": "invalid_csrf_token",
+  "statusCode": 403
+}
+```
+
+500 - Internal Server Error
+
+- Did you pass in the ticket?
+- Did you pass in matching new and confirmed passwords?
 
 ## The Hosted Page
 
